@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pa Parchar · Inventario</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-texto">Cargando inventario...</div>
+</div>
+
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <div class="logo-img-wrap">
+        <img src="assets/logo.png" alt="Pa Parchar" class="logo-img"
+             onerror="this.parentElement.style.display='none';document.querySelector('.logo-icon').classList.add('visible')"/>
+      </div>
+      <div class="logo-icon">🍔</div>
+      
+    </a>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-label">Principal</div>
+        <a href="index.html" class="nav-item"><span class="nav-icon">📊</span><span class="nav-texto">Dashboard</span></a>
+        <a href="carta.html" class="nav-item"><span class="nav-icon">🍽️</span><span class="nav-texto">Carta / Menú</span></a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Operaciones</div>
+        <a href="ventas.html" class="nav-item "><span class="nav-icon">🛒</span><span class="nav-texto">Registrar Ventas</span></a>
+        <a href="inventario.html" class="nav-item active"><span class="nav-icon">📦</span><span class="nav-texto">Inventario</span><span class="nav-badge" id="badge-inv" style="display:none">0</span></a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Análisis</div>
+        <a href="finanzas.html" class="nav-item"><span class="nav-icon">💰</span><span class="nav-texto">Finanzas</span></a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar">👤</div>
+        <div class="user-info">
+          <div class="user-nombre">Administrador</div>
+          <div class="user-rol">Pa Parchar · 2026</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menú">
+          <span></span><span></span><span></span>
+        </button>
+        <div>
+          <div class="page-title">Inventario</div>
+          <div class="page-subtitle">Control de stock e ingredientes</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-fecha" id="fecha-hoy"></div>
+        <button class="btn btn-primary btn-sm" onclick="abrirModal()">+ Agregar ingrediente</button>
+      </div>
+    </header>
+
+    <main class="page fade-in">
+      <div class="kpi-grid" id="kpis-inv"></div>
+      <div class="grid-2">
+        <div class="card" style="grid-column:1/-1">
+          <div class="card-header">
+            <div class="card-titulo">📦 Stock actual</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <select class="form-select" id="filt-cat" style="width:160px" onchange="renderTabla()"><option value="">Todas las categorías</option></select>
+              <select class="form-select" id="filt-estado" style="width:140px" onchange="renderTabla()">
+                <option value="">Todos</option>
+                <option value="ok">✅ En stock</option>
+                <option value="bajo">⚠️ Stock bajo</option>
+                <option value="critico">🔴 Crítico</option>
+              </select>
+              <button class="btn btn-success btn-sm" onclick="reponerTodo()">🔄 Reponer todo</button>
+            </div>
+          </div>
+          <div id="al-inv" class="alert"></div>
+          <div class="tabla-wrap" style="max-height:420px;overflow-y:auto">
+            <table>
+              <thead><tr><th>Estado</th><th>Ingrediente</th><th>Categoría</th><th>Stock actual</th><th>Mínimo</th><th>Unidad</th><th>Nivel</th><th>Acciones</th></tr></thead>
+              <tbody id="tabla-inv"></tbody>
+            </table>
+          </div>
+          <div class="tabla-footer" id="tot-inv"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-titulo">📊 Stock por categoría</div></div>
+          <div class="chart-wrap"><canvas id="chart-cats"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-titulo">⚠️ Ingredientes por reponer</div>
+            <span class="badge badge-rojo" id="cnt-alertas">0</span>
+          </div>
+          <div id="lista-alertas" style="max-height:240px;overflow-y:auto"></div>
+        </div>
+      </div>
+    </main>
+    <footer class="app-footer">
+      <span>Pa Parchar © 2026 · Manizales, Caldas</span>
+      <span id="footer-stats">Cargando...</span>
+    </footer>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-inv">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-titulo" id="modal-titulo">Agregar ingrediente</div>
+      <button class="btn btn-ghost btn-icon" onclick="cerrarModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="al-modal" class="alert"></div>
+      <div class="form-row">
+        <div class="form-group" style="flex:2"><label class="form-label">Ingrediente *</label><input class="form-input" id="i-nombre" placeholder="Ej: Carne de res"/></div>
+        <div class="form-group"><label class="form-label">Categoría</label>
+          <select class="form-select" id="i-categoria"><option>Proteína</option><option>Lácteo</option><option>Pan</option><option>Fresco</option><option>Salsa</option><option>Acompañamiento</option><option>Bebida</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Cantidad actual *</label><input class="form-input" id="i-cantidad" type="number" placeholder="100" min="0"/></div>
+        <div class="form-group"><label class="form-label">Cantidad mínima *</label><input class="form-input" id="i-minimo" type="number" placeholder="15" min="0"/></div>
+        <div class="form-group"><label class="form-label">Unidad</label>
+          <select class="form-select" id="i-unidad"><option>unidades</option><option>gramos</option><option>porciones</option><option>tajadas</option><option>litros</option><option>frascos</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarIngrediente()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-ajuste">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-header">
+      <div class="modal-titulo" id="ajuste-titulo">Ajustar stock</div>
+      <button class="btn btn-ghost btn-icon" onclick="cerrarAjuste()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Nueva cantidad</label><input class="form-input" id="ajuste-cantidad" type="number" min="0"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarAjuste()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarAjuste()">✓ Actualizar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { db, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "./js/firebase.js";
+import { fmt, setFechaTopbar, actualizarBadgeInv, showAlert, PALETA } from "./js/utils.js";
+
+let INVENTARIO = [], editandoId = null, ajustandoId = null, chartCats = null;
+
+async function init() {
+  setFechaTopbar();
+  await cargarInventario();
+  actualizarBadgeInv(db, collection, getDocs);
+  document.getElementById("loading").style.display = "none";
+}
+async function cargarInventario() {
+  const snap = await getDocs(collection(db, "inventario")); INVENTARIO = [];
+  snap.forEach(d => INVENTARIO.push({ _id:d.id, ...d.data() }));
+  INVENTARIO.sort((a,b) => a.ingrediente.localeCompare(b.ingrediente));
+  poblarFiltros(); renderKPIs(); renderTabla(); renderAlertas(); renderChartCats();
+  document.getElementById("footer-stats").textContent = `${INVENTARIO.length} ingredientes registrados`;
+}
+function getEstado(item) { return item.cantidad<=0?"critico":item.cantidad<=item.minimo?"bajo":"ok"; }
+function poblarFiltros() {
+  const cats = [...new Set(INVENTARIO.map(i=>i.categoria))].sort();
+  const sel = document.getElementById("filt-cat"); const val = sel.value;
+  sel.innerHTML = `<option value="">Todas las categorías</option>` + cats.map(c=>`<option value="${c}" ${c===val?'selected':''}>${c}</option>`).join("");
+}
+function renderKPIs() {
+  const total=INVENTARIO.length, alertas=INVENTARIO.filter(i=>getEstado(i)!=="ok").length;
+  const criticos=INVENTARIO.filter(i=>getEstado(i)==="critico").length, ok=total-alertas;
+  document.getElementById("kpis-inv").innerHTML = `
+    <div class="kpi-card"><div class="kpi-icon">📦</div><div class="kpi-label">Total ingredientes</div><div class="kpi-valor">${total}</div></div>
+    <div class="kpi-card verde"><div class="kpi-icon">✅</div><div class="kpi-label">En stock</div><div class="kpi-valor">${ok}</div></div>
+    <div class="kpi-card amarillo"><div class="kpi-icon">⚠️</div><div class="kpi-label">Stock bajo</div><div class="kpi-valor">${alertas}</div></div>
+    <div class="kpi-card rojo"><div class="kpi-icon">🔴</div><div class="kpi-label">Sin stock</div><div class="kpi-valor">${criticos}</div></div>`;
+}
+window.renderTabla = () => {
+  const filtCat=document.getElementById("filt-cat").value, filtEst=document.getElementById("filt-estado").value;
+  let lista=[...INVENTARIO];
+  if(filtCat) lista=lista.filter(i=>i.categoria===filtCat);
+  if(filtEst) lista=lista.filter(i=>getEstado(i)===filtEst);
+  const tbody=document.getElementById("tabla-inv");
+  tbody.innerHTML=lista.length?lista.map(item=>{
+    const est=getEstado(item), pct=item.minimo>0?Math.min(100,Math.round((item.cantidad/(item.minimo*2))*100)):100;
+    const estLabel={ok:"✅",bajo:"⚠️",critico:"🔴"}[est], colorBar={ok:"verde",bajo:"amarillo",critico:"rojo"}[est];
+    return `<tr>
+      <td><span class="badge badge-${est==='ok'?'verde':est==='bajo'?'amarillo':'rojo'}">${estLabel} ${est==='ok'?'OK':est==='bajo'?'Bajo':'Crítico'}</span></td>
+      <td class="text-bold">${item.ingrediente}</td>
+      <td><span class="badge badge-gris">${item.categoria}</span></td>
+      <td class="text-mono text-bold ${est==='critico'?'text-rojo':''}">${item.cantidad}</td>
+      <td class="text-mono text-gris">${item.minimo}</td>
+      <td class="text-sm text-gris">${item.unidad}</td>
+      <td style="min-width:100px"><div class="progress-wrap"><div class="progress-bar ${colorBar}" style="width:${pct}%"></div></div></td>
+      <td><div style="display:flex;gap:4px">
+        <button class="btn btn-secondary btn-sm" onclick="abrirAjuste('${item._id}',${item.cantidad},'${item.ingrediente}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="eliminar('${item._id}','${item.ingrediente}')">🗑️</button>
+      </div></td>
+    </tr>`;
+  }).join(""):`<tr><td colspan="8" style="text-align:center;padding:20px;color:#94A3B8">Sin resultados</td></tr>`;
+  document.getElementById("tot-inv").textContent=`${lista.length} ingredientes`;
+};
+function renderAlertas() {
+  const bajos=INVENTARIO.filter(i=>getEstado(i)!=="ok").sort((a,b)=>a.cantidad-b.cantidad);
+  document.getElementById("cnt-alertas").textContent=bajos.length;
+  document.getElementById("lista-alertas").innerHTML=bajos.length
+    ?bajos.map(item=>{const est=getEstado(item);return `<div class="inv-item">
+      <div class="inv-estado ${est}"></div>
+      <div style="flex:1"><div class="inv-nombre">${item.ingrediente}</div><div class="text-xs text-gris">${item.categoria} · mín: ${item.minimo} ${item.unidad}</div></div>
+      <div class="inv-cantidad ${est==='critico'?'text-rojo':'text-bold'}">${item.cantidad} ${item.unidad}</div>
+      <button class="btn btn-primary btn-sm" onclick="abrirAjuste('${item._id}',${item.cantidad},'${item.ingrediente}')">+</button>
+    </div>`;
+    }).join(""):`<div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-text">Todo en orden</div></div>`;
+}
+function renderChartCats() {
+  const cats={};
+  INVENTARIO.forEach(i=>{cats[i.categoria]=(cats[i.categoria]||0)+1;});
+  const labels=Object.keys(cats),valores=Object.values(cats);
+  const ctx=document.getElementById("chart-cats").getContext("2d");
+  if(chartCats)chartCats.destroy();
+  chartCats=new Chart(ctx,{type:"doughnut",data:{labels,datasets:[{data:valores,backgroundColor:PALETA.slice(0,labels.length),borderWidth:0,hoverOffset:6}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"60%",plugins:{legend:{position:"right",labels:{font:{family:"Outfit",size:11},color:"#334155",padding:10,boxWidth:12}}}} });
+}
+window.abrirModal=(id=null)=>{
+  editandoId=id;
+  document.getElementById("modal-titulo").textContent=id?"Editar ingrediente":"Agregar ingrediente";
+  if(id){const item=INVENTARIO.find(i=>i._id===id);document.getElementById("i-nombre").value=item.ingrediente;document.getElementById("i-categoria").value=item.categoria;document.getElementById("i-cantidad").value=item.cantidad;document.getElementById("i-minimo").value=item.minimo;document.getElementById("i-unidad").value=item.unidad;}
+  else {["i-nombre","i-cantidad","i-minimo"].forEach(x=>document.getElementById(x).value="");}
+  document.getElementById("modal-inv").classList.add("open");
+};
+window.cerrarModal=()=>{document.getElementById("modal-inv").classList.remove("open");editandoId=null;};
+window.guardarIngrediente=async()=>{
+  const nombre=document.getElementById("i-nombre").value.trim();
+  const cantidad=parseFloat(document.getElementById("i-cantidad").value);
+  const minimo=parseFloat(document.getElementById("i-minimo").value);
+  if(!nombre||isNaN(cantidad)||isNaN(minimo)){showAlert("al-modal","error","⚠ Completa los campos obligatorios.");return;}
+  const data={ingrediente:nombre,categoria:document.getElementById("i-categoria").value,cantidad,minimo,unidad:document.getElementById("i-unidad").value};
+  try{if(editandoId)await updateDoc(doc(db,"inventario",editandoId),data);else await addDoc(collection(db,"inventario"),data);cerrarModal();await cargarInventario();showAlert("al-inv","success","✓ Ingrediente guardado.");}
+  catch(e){showAlert("al-modal","error","Error: "+e.message);}
+};
+window.abrirAjuste=(id,cantidad,nombre)=>{ajustandoId=id;document.getElementById("ajuste-titulo").textContent=`Ajustar: ${nombre}`;document.getElementById("ajuste-cantidad").value=cantidad;document.getElementById("modal-ajuste").classList.add("open");};
+window.cerrarAjuste=()=>{document.getElementById("modal-ajuste").classList.remove("open");ajustandoId=null;};
+window.confirmarAjuste=async()=>{
+  const nueva=parseFloat(document.getElementById("ajuste-cantidad").value);
+  if(isNaN(nueva)||nueva<0)return;
+  try{await updateDoc(doc(db,"inventario",ajustandoId),{cantidad:nueva});cerrarAjuste();await cargarInventario();actualizarBadgeInv(db,collection,getDocs);showAlert("al-inv","success","✓ Stock actualizado.");}
+  catch(e){alert("Error: "+e.message);}
+};
+window.reponerTodo=async()=>{
+  if(!confirm("¿Reponer todos los ingredientes a su stock inicial?"))return;
+  const {INVENTARIO_BASE}=await import("./js/datos.js");
+  try{for(const item of INVENTARIO){const base=INVENTARIO_BASE.find(b=>b.ingrediente===item.ingrediente);if(base)await updateDoc(doc(db,"inventario",item._id),{cantidad:base.cantidad});}
+  await cargarInventario();actualizarBadgeInv(db,collection,getDocs);showAlert("al-inv","success","✓ Inventario repuesto.");}
+  catch(e){alert("Error: "+e.message);}
+};
+window.eliminar=async(id,nombre)=>{if(!confirm(`¿Eliminar "${nombre}"?`))return;await deleteDoc(doc(db,"inventario",id));await cargarInventario();};
+init();
+</script>
+
+<!-- Sidebar responsive -->
+<script>
+function toggleSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("sidebar-overlay");
+  const isOpen  = sidebar.classList.contains("open");
+  if (isOpen) { sidebar.classList.remove("open"); overlay.classList.remove("visible"); }
+  else        { sidebar.classList.add("open");    overlay.classList.add("visible"); }
+}
+function closeSidebar() {
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("sidebar-overlay").classList.remove("visible");
+}
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".nav-item").forEach(el => {
+    el.addEventListener("click", () => { if (window.innerWidth <= 900) closeSidebar(); });
+  });
+});
+</script>
+</body>
+</html>

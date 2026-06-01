@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pa Parchar · Ventas</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-texto">Cargando ventas...</div>
+</div>
+
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <div class="logo-img-wrap">
+        <img src="assets/logo.png" alt="Pa Parchar" class="logo-img"
+             onerror="this.parentElement.style.display='none';document.querySelector('.logo-icon').classList.add('visible')"/>
+      </div>
+      <div class="logo-icon">🍔</div>
+      
+    </a>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-label">Principal</div>
+        <a href="index.html" class="nav-item"><span class="nav-icon">📊</span><span class="nav-texto">Dashboard</span></a>
+        <a href="carta.html" class="nav-item"><span class="nav-icon">🍽️</span><span class="nav-texto">Carta / Menú</span></a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Operaciones</div>
+        <a href="ventas.html" class="nav-item active"><span class="nav-icon">🛒</span><span class="nav-texto">Registrar Ventas</span></a>
+        <a href="inventario.html" class="nav-item "><span class="nav-icon">📦</span><span class="nav-texto">Inventario</span><span class="nav-badge" id="badge-inv" style="display:none">0</span></a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Análisis</div>
+        <a href="finanzas.html" class="nav-item"><span class="nav-icon">💰</span><span class="nav-texto">Finanzas</span></a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar">👤</div>
+        <div class="user-info">
+          <div class="user-nombre">Administrador</div>
+          <div class="user-rol">Pa Parchar · 2026</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menú">
+          <span></span><span></span><span></span>
+        </button>
+        <div>
+          <div class="page-title">Registrar Ventas</div>
+          <div class="page-subtitle">Registra las ventas y el inventario se actualiza solo</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-fecha" id="fecha-hoy"></div>
+      </div>
+    </header>
+
+    <main class="page fade-in">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-titulo">🛒 Nueva venta</div></div>
+          <div id="al-venta" class="alert"></div>
+          <div class="form-row">
+            <div class="form-group" style="flex:2">
+              <label class="form-label">Fecha *</label>
+              <input class="form-input" type="date" id="v-fecha"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Turno</label>
+              <select class="form-select" id="v-turno">
+                <option>Mañana</option><option>Tarde</option><option selected>Noche</option><option>Madrugada</option>
+              </select>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#94A3B8;margin-bottom:10px;font-family:'DM Mono',monospace">
+            Selecciona un producto y ajusta la cantidad:
+          </div>
+          <div class="producto-grid" id="prod-grid" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr))"></div>
+          <div id="area-contador" style="display:none;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:12px;padding:16px;margin:12px 0">
+            <div style="font-size:13px;font-weight:700;color:#1E3A5F;margin-bottom:10px" id="prod-sel-nombre"></div>
+            <div class="contador">
+              <button class="contador-btn" onclick="cambiarCant(-1)">−</button>
+              <div class="contador-valor" id="cnt-val">0</div>
+              <button class="contador-btn" onclick="cambiarCant(1)">+</button>
+              <span style="font-size:12px;color:#94A3B8;margin-left:4px">unidades</span>
+            </div>
+            <div style="font-size:12px;color:#2563EB;margin-top:8px;font-family:'DM Mono',monospace" id="cnt-total"></div>
+          </div>
+          <div id="resumen-pedido" style="display:none">
+            <hr class="sep"/>
+            <div class="card-titulo" style="margin-bottom:12px">Resumen a registrar</div>
+            <div id="items-resumen"></div>
+            <div class="flex-between" style="padding:10px 0;border-top:1px solid #E2E8F0;margin-top:8px">
+              <span style="font-weight:700">Total:</span>
+              <span style="font-weight:800;color:#2563EB;font-size:18px;font-family:'DM Mono',monospace" id="total-venta"></span>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="guardarVenta()">💾 Guardar venta</button>
+            <button class="btn btn-ghost" onclick="limpiarVenta()">✕ Limpiar</button>
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="card-header"><div class="card-titulo">📅 Resumen de hoy</div></div>
+            <div id="resumen-hoy"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-titulo">📊 Ventas por turno — hoy</div></div>
+            <div class="chart-wrap-sm"><canvas id="chart-turnos"></canvas></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-titulo">📋 Historial de ventas</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input type="date" id="filt-fecha" class="form-input" style="width:160px" oninput="renderTabla()"/>
+            <select class="form-select" id="filt-turno" style="width:130px" onchange="renderTabla()">
+              <option value="">Todos los turnos</option>
+              <option>Mañana</option><option>Tarde</option><option>Noche</option><option>Madrugada</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="limpiarFiltros()">✕ Limpiar</button>
+            <button class="btn btn-success btn-sm" onclick="exportarCSV()">⬇ CSV</button>
+          </div>
+        </div>
+        <div class="tabla-wrap" style="max-height:360px;overflow-y:auto">
+          <table>
+            <thead><tr><th>Fecha</th><th>Turno</th><th>Producto</th><th>Unidades</th><th>Precio unit.</th><th>Total</th><th></th></tr></thead>
+            <tbody id="tabla-ventas"></tbody>
+          </table>
+        </div>
+        <div class="tabla-footer" id="tot-ventas"></div>
+      </div>
+    </main>
+    <footer class="app-footer">
+      <span>Pa Parchar © 2026 · Manizales, Caldas</span>
+      <span id="footer-stats">Cargando...</span>
+    </footer>
+  </div>
+</div>
+
+<script type="module">
+import { db, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "./js/firebase.js";
+import { PRODUCTOS_BASE, INVENTARIO_BASE, RECETAS, TURNOS } from "./js/datos.js";
+import { fmt, hoyStr, fechaLegible, toDate, getEmoji, setFechaTopbar,
+         seedData, actualizarBadgeInv, showAlert } from "./js/utils.js";
+
+let PRODUCTOS = [], INVENTARIO = [], VENTAS = [];
+let pedidoActual = {}, prodSeleccionado = null, chartTurnos = null;
+
+async function init() {
+  setFechaTopbar();
+  document.getElementById("v-fecha").value = hoyStr();
+  await seedData(db, { collection, getDocs, setDoc: async()=>{}, addDoc, doc }, { PRODUCTOS_BASE, INVENTARIO_BASE });
+  await Promise.all([cargarProductos(), cargarInventario(), cargarVentas()]);
+  renderGrid(); renderResumenHoy(); renderChartTurnos(); renderTabla();
+  actualizarBadgeInv(db, collection, getDocs);
+  document.getElementById("loading").style.display = "none";
+}
+
+async function cargarProductos() {
+  const snap = await getDocs(collection(db, "Productos")); PRODUCTOS = [];
+  snap.forEach(d => { const data = d.data(); if (data.activo !== false) PRODUCTOS.push({ _id:d.id, ...data }); });
+}
+async function cargarInventario() {
+  const snap = await getDocs(collection(db, "inventario")); INVENTARIO = [];
+  snap.forEach(d => INVENTARIO.push({ _id:d.id, ...d.data() }));
+}
+async function cargarVentas() {
+  const snap = await getDocs(collection(db, "ventas")); VENTAS = [];
+  snap.forEach(d => VENTAS.push({ _id:d.id, ...d.data() }));
+  VENTAS.sort((a,b) => toDate(b.fecha) - toDate(a.fecha));
+  document.getElementById("footer-stats").textContent = `${VENTAS.length} ventas registradas`;
+}
+function renderGrid() {
+  document.getElementById("prod-grid").innerHTML = PRODUCTOS.map(p => `
+    <div class="producto-card ${pedidoActual[p.nombre]?'seleccionado':''}"
+         onclick="seleccionarProducto('${p._id}','${p.nombre}',${p.precio})">
+      <div class="producto-emoji">${p.emoji||"🍽️"}</div>
+      <div class="producto-nombre">${p.nombre}</div>
+      <div class="producto-precio">${fmt(p.precio)}</div>
+      ${pedidoActual[p.nombre] ? `<div class="badge badge-azul" style="margin-top:6px">${pedidoActual[p.nombre].cantidad} uds</div>` : ""}
+    </div>`).join("");
+}
+window.seleccionarProducto = (id, nombre, precio) => {
+  prodSeleccionado = { id, nombre, precio };
+  const cant = pedidoActual[nombre]?.cantidad || 0;
+  document.getElementById("cnt-val").textContent = cant;
+  document.getElementById("prod-sel-nombre").textContent = `${getEmoji(nombre)} ${nombre} — ${fmt(precio)} c/u`;
+  document.getElementById("cnt-total").textContent = cant > 0 ? `Subtotal: ${fmt(cant * precio)}` : "";
+  document.getElementById("area-contador").style.display = "block";
+};
+window.cambiarCant = (delta) => {
+  if (!prodSeleccionado) return;
+  const { nombre, precio } = prodSeleccionado;
+  const nueva = Math.max(0, (pedidoActual[nombre]?.cantidad || 0) + delta);
+  if (nueva === 0) delete pedidoActual[nombre]; else pedidoActual[nombre] = { cantidad: nueva, precio };
+  document.getElementById("cnt-val").textContent = nueva;
+  document.getElementById("cnt-total").textContent = nueva > 0 ? `Subtotal: ${fmt(nueva * precio)}` : "";
+  renderGrid(); renderResumenPedido();
+};
+function renderResumenPedido() {
+  const items = Object.entries(pedidoActual);
+  const res = document.getElementById("resumen-pedido");
+  if (!items.length) { res.style.display = "none"; return; }
+  res.style.display = "block";
+  const total = items.reduce((s,[,v]) => s + v.cantidad * v.precio, 0);
+  document.getElementById("items-resumen").innerHTML = items.map(([nombre,v]) =>
+    `<div class="flex-between" style="padding:6px 0;border-bottom:1px solid #F1F5F9">
+      <span>${getEmoji(nombre)} ${nombre} × ${v.cantidad}</span>
+      <span class="text-mono text-bold">${fmt(v.cantidad * v.precio)}</span>
+    </div>`).join("");
+  document.getElementById("total-venta").textContent = fmt(total);
+}
+window.guardarVenta = async () => {
+  const items = Object.entries(pedidoActual);
+  if (!items.length) { showAlert("al-venta","warning","⚠ Selecciona al menos un producto."); return; }
+  const fecha = document.getElementById("v-fecha").value;
+  const turno = document.getElementById("v-turno").value;
+  if (!fecha) { showAlert("al-venta","error","⚠ Selecciona una fecha."); return; }
+  try {
+    for (const [nombre, { cantidad, precio }] of items) {
+      const ahora = new Date(fecha + "T12:00:00");
+      await addDoc(collection(db, "ventas"), { producto:nombre, cantidad, precioUnit:precio, total:cantidad*precio, turno, fecha:ahora, mesNum:ahora.getMonth(), anio:ahora.getFullYear() });
+      const receta = RECETAS[nombre];
+      if (receta) for (const { ingrediente, cantidad:cantIng } of receta) {
+        const item = INVENTARIO.find(i => i.ingrediente === ingrediente);
+        if (item) { const nc = Math.max(0, Number(item.cantidad)-(cantIng*cantidad)); await updateDoc(doc(db,"inventario",item._id),{cantidad:nc}); item.cantidad=nc; }
+      }
+    }
+    showAlert("al-venta","success","✓ Venta registrada y inventario actualizado.");
+    limpiarVenta(); await cargarVentas(); renderResumenHoy(); renderChartTurnos(); renderTabla();
+    actualizarBadgeInv(db, collection, getDocs);
+  } catch(e) { showAlert("al-venta","error","Error: " + e.message); }
+};
+window.limpiarVenta = () => {
+  pedidoActual = {}; prodSeleccionado = null;
+  document.getElementById("v-fecha").value = hoyStr();
+  document.getElementById("area-contador").style.display = "none";
+  document.getElementById("resumen-pedido").style.display = "none";
+  renderGrid();
+};
+function renderResumenHoy() {
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const ventasHoy = VENTAS.filter(v => toDate(v.fecha) >= hoy);
+  const totalHoy = ventasHoy.reduce((s,v) => s+Number(v.total||0),0);
+  const unidades = ventasHoy.reduce((s,v) => s+Number(v.cantidad||0),0);
+  const topProd = {}; ventasHoy.forEach(v => { topProd[v.producto]=(topProd[v.producto]||0)+Number(v.cantidad||0); });
+  const top = Object.entries(topProd).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  document.getElementById("resumen-hoy").innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="flex-between" style="padding:8px 0;border-bottom:1px solid #F1F5F9"><span style="color:#64748B">💰 Total ventas</span><span class="text-bold text-azul text-mono">${fmt(totalHoy)}</span></div>
+      <div class="flex-between" style="padding:8px 0;border-bottom:1px solid #F1F5F9"><span style="color:#64748B">📦 Unidades vendidas</span><span class="text-bold">${unidades}</span></div>
+      <div class="flex-between" style="padding:8px 0;border-bottom:1px solid #F1F5F9"><span style="color:#64748B">🧾 Transacciones</span><span class="text-bold">${ventasHoy.length}</span></div>
+      ${top.length ? `<div style="margin-top:4px;font-size:11px;color:#94A3B8;font-family:'DM Mono',monospace">🏆 TOP HOY</div>${top.map(([n,c],i)=>`<div class="flex-between" style="padding:6px 0"><span>${['🥇','🥈','🥉'][i]} ${n}</span><span class="badge badge-azul">${c} uds</span></div>`).join("")}` : ""}
+    </div>`;
+}
+function renderChartTurnos() {
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const turnos = ["Mañana","Tarde","Noche","Madrugada"];
+  const valores = turnos.map(t => VENTAS.filter(v=>toDate(v.fecha)>=hoy&&v.turno===t).reduce((s,v)=>s+Number(v.total||0),0));
+  const ctx = document.getElementById("chart-turnos").getContext("2d");
+  if (chartTurnos) chartTurnos.destroy();
+  chartTurnos = new Chart(ctx, { type:"bar", data:{ labels:turnos, datasets:[{ data:valores, backgroundColor:["#DBEAFE","#93C5FD","#2563EB","#1D4ED8"], borderRadius:8, borderSkipped:false }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>` ${fmt(c.raw)}` } } },
+    scales:{ x:{ grid:{display:false}, ticks:{font:{family:"Outfit",size:11},color:"#94A3B8"} }, y:{ grid:{color:"#F1F5F9"}, ticks:{font:{family:"Outfit",size:11},color:"#94A3B8",callback:v=>"$"+(v/1000)+"k"} } } } });
+}
+window.renderTabla = () => {
+  const filtFecha = document.getElementById("filt-fecha").value;
+  const filtTurno = document.getElementById("filt-turno").value;
+  let lista = [...VENTAS];
+  if (filtFecha) lista = lista.filter(v => toDate(v.fecha).toISOString().split("T")[0]===filtFecha);
+  if (filtTurno) lista = lista.filter(v => v.turno===filtTurno);
+  const total = lista.reduce((s,v)=>s+Number(v.total||0),0);
+  document.getElementById("tabla-ventas").innerHTML = lista.length
+    ? lista.map(v=>`<tr><td class="text-mono text-sm">${fechaLegible(v.fecha)}</td><td><span class="badge badge-gris">${v.turno||"—"}</span></td><td><span style="margin-right:6px">${getEmoji(v.producto)}</span>${v.producto}</td><td><span class="badge badge-azul">${v.cantidad}</span></td><td class="text-mono">${fmt(v.precioUnit||0)}</td><td class="text-bold text-azul text-mono">${fmt(v.total)}</td><td><button class="btn btn-danger btn-sm" onclick="eliminarVenta('${v._id}')">🗑️</button></td></tr>`).join("")
+    : `<tr><td colspan="7" style="text-align:center;padding:20px;color:#94A3B8">Sin registros</td></tr>`;
+  document.getElementById("tot-ventas").textContent = `${lista.length} registros · Total: ${fmt(total)}`;
+};
+window.limpiarFiltros = () => { document.getElementById("filt-fecha").value=""; document.getElementById("filt-turno").value=""; renderTabla(); };
+window.eliminarVenta = async (id) => {
+  if (!confirm("¿Eliminar este registro?")) return;
+  await deleteDoc(doc(db,"ventas",id)); await cargarVentas(); renderResumenHoy(); renderChartTurnos(); renderTabla();
+};
+window.exportarCSV = () => {
+  if (!VENTAS.length) { alert("Sin datos"); return; }
+  const cols=["fecha","turno","producto","cantidad","precioUnit","total"];
+  const csv=[cols.join(","),...VENTAS.map(v=>cols.map(c=>`"${c==="fecha"?fechaLegible(v.fecha):(v[c]||"")}"` ).join(","))].join("\n");
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download="paparchar_ventas.csv"; a.click();
+};
+init();
+</script>
+
+<!-- Sidebar responsive -->
+<script>
+function toggleSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("sidebar-overlay");
+  const isOpen  = sidebar.classList.contains("open");
+  if (isOpen) { sidebar.classList.remove("open"); overlay.classList.remove("visible"); }
+  else        { sidebar.classList.add("open");    overlay.classList.add("visible"); }
+}
+function closeSidebar() {
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("sidebar-overlay").classList.remove("visible");
+}
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".nav-item").forEach(el => {
+    el.addEventListener("click", () => { if (window.innerWidth <= 900) closeSidebar(); });
+  });
+});
+</script>
+</body>
+</html>

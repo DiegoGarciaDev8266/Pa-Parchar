@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pa Parchar · Dashboard</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-texto" id="loading-texto">Cargando Pa Parchar...</div>
+</div>
+
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <div class="logo-img-wrap">
+        <img src="assets/logo.png" alt="Pa Parchar" class="logo-img"
+             onerror="this.parentElement.style.display='none';document.querySelector('.logo-icon').classList.add('visible')"/>
+      </div>
+      <div class="logo-icon">🍔</div>
+      
+    </a>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-label">Principal</div>
+        <a href="index.html" class="nav-item active"><span class="nav-icon">📊</span><span class="nav-texto">Dashboard</span></a>
+        <a href="carta.html" class="nav-item"><span class="nav-icon">🍽️</span><span class="nav-texto">Carta / Menú</span></a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Operaciones</div>
+        <a href="ventas.html" class="nav-item"><span class="nav-icon">🛒</span><span class="nav-texto">Registrar Ventas</span></a>
+        <a href="inventario.html" class="nav-item"><span class="nav-icon">📦</span><span class="nav-texto">Inventario</span><span class="nav-badge" id="badge-inv" style="display:none">0</span></a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Análisis</div>
+        <a href="finanzas.html" class="nav-item"><span class="nav-icon">💰</span><span class="nav-texto">Finanzas</span></a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar">👤</div>
+        <div class="user-info">
+          <div class="user-nombre">Administrador</div>
+          <div class="user-rol">Pa Parchar · 2026</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <!-- Overlay para cerrar sidebar en móvil -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" id="menu-btn" onclick="toggleSidebar()" aria-label="Menú">
+          <span></span><span></span><span></span>
+        </button>
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-subtitle">Resumen general del negocio</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-fecha" id="fecha-hoy"></div>
+        <button class="btn btn-primary btn-sm" onclick="location.href='ventas.html'">+ Nueva Venta</button>
+      </div>
+    </header>
+
+    <main class="page fade-in">
+
+      <div class="bienvenida">
+        <div class="bienvenida-titulo" id="saludo">Bienvenido 👋</div>
+        <div class="bienvenida-sub">Aquí está el resumen de Pa Parchar al día de hoy</div>
+      </div>
+
+      <div class="kpi-grid" id="kpis-hoy"></div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-titulo">Accesos rápidos</div></div>
+        <div class="accesos-rapidos">
+          <a href="ventas.html"     class="acceso-card"><div class="acceso-icon">🛒</div><div class="acceso-nombre">Registrar Venta</div><div class="acceso-desc">Nueva venta del día</div></a>
+          <a href="carta.html"      class="acceso-card"><div class="acceso-icon">🍽️</div><div class="acceso-nombre">Ver Carta</div><div class="acceso-desc">Menú y precios</div></a>
+          <a href="inventario.html" class="acceso-card"><div class="acceso-icon">📦</div><div class="acceso-nombre">Inventario</div><div class="acceso-desc">Control de stock</div></a>
+          <a href="finanzas.html"   class="acceso-card"><div class="acceso-icon">💰</div><div class="acceso-nombre">Finanzas</div><div class="acceso-desc">Ingresos y gastos</div></a>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-titulo">Ventas — últimos 7 días</div>
+            <span class="badge badge-azul" id="total-semana">$0</span>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-semana"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-titulo">Top productos del mes</div>
+            <span class="badge badge-gris" id="mes-actual"></span>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-productos"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-titulo">Últimas ventas</div>
+            <a href="ventas.html" class="btn btn-ghost btn-sm">Ver todas</a>
+          </div>
+          <div class="tabla-wrap">
+            <table>
+              <thead><tr><th>Producto</th><th>Cant.</th><th>Total</th><th>Turno</th></tr></thead>
+              <tbody id="tabla-ultimas"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-titulo">⚠️ Alertas de inventario</div>
+            <a href="inventario.html" class="btn btn-ghost btn-sm">Ver todo</a>
+          </div>
+          <div id="alertas-inv"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-titulo">Resumen financiero — últimos 6 meses</div>
+          <a href="finanzas.html" class="btn btn-ghost btn-sm">Ver detalle</a>
+        </div>
+        <div class="chart-wrap-lg"><canvas id="chart-financiero"></canvas></div>
+      </div>
+
+    </main>
+    <footer class="app-footer">
+      <span>Pa Parchar © 2026 · Manizales, Caldas</span>
+      <span id="footer-stats">Cargando...</span>
+    </footer>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp }   from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+import { getFirestore, collection, getDocs, addDoc, setDoc, doc }
+  from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+import { PRODUCTOS_BASE, INVENTARIO_BASE, MESES, DIAS } from "./js/datos.js";
+import { fmt, getEmoji, setFechaTopbar, getSaludo,
+         actualizarBadgeInv, PALETA, chartDefaults }    from "./js/utils.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyDokXqRJgfpOT2Ax8bKsqAf8aQXBfNI2gY",
+  authDomain:        "pa-parchar.firebaseapp.com",
+  projectId:         "pa-parchar",
+  storageBucket:     "pa-parchar.firebasestorage.app",
+  messagingSenderId: "264991300918",
+  appId:             "1:264991300918:web:dba1874bd25f934c956797"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+let chartSemana, chartProductos, chartFinanciero;
+
+// ════════════════════════════════════════════════
+//  SEED PRODUCTOS E INVENTARIO
+// ════════════════════════════════════════════════
+async function seedBase() {
+  const snapP = await getDocs(collection(db,"Productos"));
+  if (snapP.size <= 1) {
+    for (const p of PRODUCTOS_BASE)
+      await setDoc(doc(db,"Productos",p.id), { ...p, activo:true }, { merge:true });
+  }
+  const snapI = await getDocs(collection(db,"inventario"));
+  if (snapI.size <= 1) {
+    for (const item of INVENTARIO_BASE)
+      await addDoc(collection(db,"inventario"), item);
+  }
+}
+
+// ════════════════════════════════════════════════
+//  DATOS HISTÓRICOS DEMO
+// ════════════════════════════════════════════════
+const PRODS_DEMO = [
+  { nombre:"Hamburguesa Clásica", precio:14000 },
+  { nombre:"Doble Carne",         precio:18000 },
+  { nombre:"Combo Parchar",       precio:22000 },
+  { nombre:"Perro Caliente",      precio:10000 },
+  { nombre:"Veggie Burger",       precio:15000 },
+  { nombre:"Papas Fritas",        precio:7000  },
+  { nombre:"Papas Gajo",          precio:8000  },
+  { nombre:"Aros de Cebolla",     precio:6000  },
+  { nombre:"Gaseosa",             precio:4000  },
+  { nombre:"Jugo Natural",        precio:6000  },
+  { nombre:"Limonada",            precio:5000  },
+  { nombre:"Agua",                precio:3000  },
+];
+
+// Peso de cada producto (más alto = más vendido)
+const PESOS = [25,18,15,12,8,20,15,8,30,15,18,12];
+
+// Configuración por mes: factorVentas y factorCosto
+const MESES_DEMO = [
+  { anio:2025, mes:11, factor:1.40, diasVenta:30, costo:1.00 }, // Dic 2025 - Navidad
+  { anio:2026, mes:0,  factor:2.20, diasVenta:31, costo:1.00 }, // Ene 2026 - Feria Manizales
+  { anio:2026, mes:1,  factor:0.70, diasVenta:24, costo:1.00 }, // Feb 2026 - Post feria
+  { anio:2026, mes:2,  factor:0.80, diasVenta:26, costo:1.00 }, // Mar 2026
+  { anio:2026, mes:3,  factor:0.82, diasVenta:26, costo:1.00 }, // Abr 2026
+  { anio:2026, mes:4,  factor:0.85, diasVenta:20, costo:1.00 }, // May 2026 - parcial
+];
+
+const GASTOS_FIJOS = [
+  { desc:"Arriendo local",          cat:"Arriendo",           monto:800000  },
+  { desc:"Nómina empleados",        cat:"Nómina",             monto:1200000 },
+  { desc:"Servicios públicos",      cat:"Servicios Públicos", monto:200000  },
+  { desc:"Empaques y desechables",  cat:"Empaques",           monto:150000  },
+  { desc:"Gas y combustible",       cat:"Servicios Públicos", monto:100000  },
+];
+
+const GASTOS_MAT = [
+  { desc:"Compra carne de res",       cat:"Materia Prima", base:560000 },
+  { desc:"Compra panes y lácteos",    cat:"Materia Prima", base:180000 },
+  { desc:"Compra verduras y frescos", cat:"Materia Prima", base:100000 },
+  { desc:"Compra bebidas",            cat:"Materia Prima", base:150000 },
+  { desc:"Salsas y condimentos",      cat:"Materia Prima", base:60000  },
+];
+
+const TURNOS  = ["Mañana","Tarde","Noche"];
+const METODOS = ["Efectivo","Efectivo","Nequi/Daviplata","Tarjeta","Efectivo"];
+
+function rnd(a,b) { return Math.floor(Math.random()*(b-a+1))+a; }
+
+function elegirProducto() {
+  const total = PESOS.reduce((a,b)=>a+b,0);
+  let r = Math.random()*total;
+  for (let i=0;i<PESOS.length;i++) { r-=PESOS[i]; if(r<=0) return PRODS_DEMO[i]; }
+  return PRODS_DEMO[0];
+}
+
+function setLoadingText(txt) {
+  const el = document.getElementById("loading-texto");
+  if (el) el.textContent = txt;
+}
+
+async function seedDatosDemo() {
+  // Solo carga si ventas está completamente vacía
+  const snap = await getDocs(collection(db,"ventas"));
+  if (snap.size > 3) return; // Ya tiene datos, no sobreescribir
+
+  setLoadingText("Cargando datos históricos...");
+
+  for (const cfg of MESES_DEMO) {
+    const { anio, mes, factor, diasVenta, costo } = cfg;
+    const ventasPorDia = Math.round(8 * factor);
+    let montoMes = 0;
+
+    // ── Ventas del mes ───────────────────────────
+    for (let dia=1; dia<=diasVenta; dia++) {
+      const fecha = new Date(anio, mes, dia);
+      if (fecha > new Date()) continue;
+      const esFinde  = fecha.getDay()===0 || fecha.getDay()===6;
+      const cuantas  = Math.round(ventasPorDia*(esFinde?1.4:1)*(0.8+Math.random()*0.4));
+
+      for (let v=0; v<cuantas; v++) {
+        const prod  = elegirProducto();
+        const cant  = rnd(1, factor>1.5 ? 4 : 2);
+        const total = prod.precio * cant;
+        montoMes   += total;
+        try {
+          await addDoc(collection(db,"ventas"), {
+            producto:   prod.nombre,
+            cantidad:   cant,
+            precioUnit: prod.precio,
+            total,
+            turno:      TURNOS[rnd(0,2)],
+            metodoPago: METODOS[rnd(0,4)],
+            fecha:      new Date(anio, mes, dia, rnd(8,22), rnd(0,59)),
+            mesNum:     mes,
+            anio,
+          });
+        } catch(e) { /* skip duplicates */ }
+      }
+    }
+
+    // ── Ingresos del mes ─────────────────────────
+    await addDoc(collection(db,"movimientos"), {
+      descripcion:`Ventas efectivo — ${MESES[mes]} ${anio}`,
+      tipo:"Ingreso", categoria:"Ventas Hamburguesas",
+      monto: Math.round(montoMes*0.65),
+      metodoPago:"Efectivo", notas:"Consolidado efectivo",
+      fecha: new Date(anio,mes,28), mesNum:mes, anio,
+    });
+    await addDoc(collection(db,"movimientos"), {
+      descripcion:`Ventas digital — ${MESES[mes]} ${anio}`,
+      tipo:"Ingreso", categoria:"Ventas Combos",
+      monto: Math.round(montoMes*0.35),
+      metodoPago:"Nequi/Daviplata", notas:"Consolidado digital",
+      fecha: new Date(anio,mes,28), mesNum:mes, anio,
+    });
+
+    // ── Gastos fijos del mes (proporcional a días trabajados) ──
+    // Si es mes parcial (diasVenta < 28), se paga proporcional
+    const proporcion = Math.min(1, diasVenta / 28);
+    for (let i=0; i<GASTOS_FIJOS.length; i++) {
+      const g = GASTOS_FIJOS[i];
+      await addDoc(collection(db,"movimientos"), {
+        descripcion: g.desc,
+        tipo:"Gasto", categoria:g.cat,
+        monto: Math.round(g.monto * proporcion * (0.95+Math.random()*0.1)),
+        metodoPago: i<=1 ? "Transferencia" : "Efectivo",
+        notas: `Pago ${MESES[mes]} ${anio}`,
+        fecha: new Date(anio,mes,5+i), mesNum:mes, anio,
+      });
+    }
+
+    // ── Materia prima del mes (proporcional a ventas) ────────
+    for (const g of GASTOS_MAT) {
+      await addDoc(collection(db,"movimientos"), {
+        descripcion: g.desc,
+        tipo:"Gasto", categoria:g.cat,
+        monto: Math.round(g.base*costo*factor*proporcion*(0.9+Math.random()*0.2)),
+        metodoPago:"Efectivo",
+        notas: costo>1 ? "⚠ Costo elevado — proveedor incumplió" : "Compra semanal",
+        fecha: new Date(anio,mes,rnd(3,Math.min(25,diasVenta))), mesNum:mes, anio,
+      });
+    }
+
+    // ── Gastos especiales ────────────────────────
+    if (mes===0 && anio===2026) {
+      // Enero: Feria de Manizales
+      await addDoc(collection(db,"movimientos"), {
+        descripcion:"Publicidad Feria de Manizales",
+        tipo:"Gasto", categoria:"Marketing",
+        monto:450000, metodoPago:"Transferencia",
+        notas:"Volantes, redes sociales y pendón feria",
+        fecha:new Date(2026,0,3), mesNum:0, anio:2026,
+      });
+      await addDoc(collection(db,"movimientos"), {
+        descripcion:"Personal adicional Feria",
+        tipo:"Gasto", categoria:"Nómina",
+        monto:1200000, metodoPago:"Efectivo",
+        notas:"2 empleados temporales durante la Feria",
+        fecha:new Date(2026,0,8), mesNum:0, anio:2026,
+      });
+    }
+
+    if (mes===11 && anio===2025) {
+      // Diciembre: decoración navideña
+      await addDoc(collection(db,"movimientos"), {
+        descripcion:"Decoración navideña local",
+        tipo:"Gasto", categoria:"Marketing",
+        monto:180000, metodoPago:"Efectivo",
+        notas:"Adornos y luces para la temporada",
+        fecha:new Date(2025,11,2), mesNum:11, anio:2025,
+      });
+    }
+
+    setLoadingText(`Cargando ${MESES[mes]} ${anio}...`);
+  }
+}
+
+// ════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════
+async function init() {
+  document.getElementById("saludo").textContent = getSaludo();
+  setFechaTopbar();
+  document.getElementById("mes-actual").textContent = MESES[new Date().getMonth()];
+
+  setLoadingText("Verificando base de datos...");
+  await seedBase();
+
+  setLoadingText("Cargando historial...");
+  await seedDatosDemo();
+
+  setLoadingText("Generando gráficas...");
+  await Promise.all([
+    cargarKPIs(),
+    cargarChartSemana(),
+    cargarChartProductos(),
+    cargarUltimasVentas(),
+    cargarAlertasInventario(),
+    cargarChartFinanciero(),
+  ]);
+
+  actualizarBadgeInv(db, collection, getDocs);
+  document.getElementById("loading").style.display = "none";
+}
+
+// ════════════════════════════════════════════════
+//  KPIs HOY
+// ════════════════════════════════════════════════
+async function cargarKPIs() {
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+
+  const snapV = await getDocs(collection(db,"ventas"));
+  let ventasHoy=0, unidadesHoy=0;
+  snapV.forEach(d => {
+    const data=d.data();
+    const f=data.fecha?.toDate?data.fecha.toDate():new Date(data.fecha);
+    if(f>=hoy){ ventasHoy+=Number(data.total||0); unidadesHoy+=Number(data.cantidad||0); }
+  });
+
+  const snapM = await getDocs(collection(db,"movimientos"));
+  let gastosHoy=0;
+  snapM.forEach(d => {
+    const data=d.data();
+    const f=data.fecha?.toDate?data.fecha.toDate():new Date(data.fecha);
+    if(f>=hoy && data.tipo==="Gasto") gastosHoy+=Number(data.monto||0);
+  });
+
+  const snapI = await getDocs(collection(db,"inventario"));
+  let alertas=0;
+  snapI.forEach(d => { const data=d.data(); if(Number(data.cantidad)<=Number(data.minimo)) alertas++; });
+  const badgeInv = document.getElementById("badge-inv");
+  badgeInv.textContent = alertas;
+  badgeInv.style.display = alertas>0 ? "inline-flex" : "none";
+  document.getElementById("footer-stats").textContent = `${snapV.size} ventas · ${snapI.size} ingredientes`;
+
+  const ganancia = ventasHoy - gastosHoy;
+  document.getElementById("kpis-hoy").innerHTML = `
+    <div class="kpi-card verde">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-label">Ventas hoy</div>
+      <div class="kpi-valor">${fmt(ventasHoy)}</div>
+      <div class="kpi-delta">${unidadesHoy} unidades</div>
+    </div>
+    <div class="kpi-card ${ganancia>=0?'verde':'rojo'}">
+      <div class="kpi-icon">${ganancia>=0?'📈':'📉'}</div>
+      <div class="kpi-label">Ganancia hoy</div>
+      <div class="kpi-valor">${fmt(ganancia)}</div>
+      <div class="kpi-delta">Ingresos − Gastos</div>
+    </div>
+    <div class="kpi-card rojo">
+      <div class="kpi-icon">💸</div>
+      <div class="kpi-label">Gastos hoy</div>
+      <div class="kpi-valor">${fmt(gastosHoy)}</div>
+      <div class="kpi-delta">Registrados hoy</div>
+    </div>
+    <div class="kpi-card ${alertas>0?'amarillo':''}">
+      <div class="kpi-icon">${alertas>0?'⚠️':'📦'}</div>
+      <div class="kpi-label">Alertas stock</div>
+      <div class="kpi-valor">${alertas}</div>
+      <div class="kpi-delta">${alertas>0?'Ingredientes bajos':'Todo en orden'}</div>
+    </div>`;
+}
+
+// ════════════════════════════════════════════════
+//  CHART SEMANA
+// ════════════════════════════════════════════════
+async function cargarChartSemana() {
+  const snap = await getDocs(collection(db,"ventas"));
+  const porDia = {};
+  for(let i=6;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-i); d.setHours(0,0,0,0);
+    porDia[d.toISOString().split("T")[0]]=0;
+  }
+  snap.forEach(d=>{
+    const data=d.data();
+    const f=data.fecha?.toDate?data.fecha.toDate():new Date(data.fecha);
+    const k=f.toISOString().split("T")[0];
+    if(k in porDia) porDia[k]+=Number(data.total||0);
+  });
+  const labels  = Object.keys(porDia).map(k=>DIAS[new Date(k+"T12:00:00").getDay()].substring(0,3));
+  const valores = Object.values(porDia);
+  document.getElementById("total-semana").textContent = fmt(valores.reduce((a,b)=>a+b,0));
+  const ctx = document.getElementById("chart-semana").getContext("2d");
+  if(chartSemana) chartSemana.destroy();
+  chartSemana = new Chart(ctx,{
+    type:"bar",
+    data:{ labels, datasets:[{
+      label:"Ventas", data:valores,
+      backgroundColor:valores.map((_,i)=>i===valores.length-1?"#2563EB":"#DBEAFE"),
+      borderRadius:8, borderSkipped:false
+    }]},
+    options:{
+      ...chartDefaults,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>` ${fmt(c.raw)}` } } }
+    }
+  });
+}
+
+// ════════════════════════════════════════════════
+//  CHART TOP PRODUCTOS
+// ════════════════════════════════════════════════
+async function cargarChartProductos() {
+  const snap = await getDocs(collection(db,"ventas"));
+  const mes=new Date().getMonth(), anio=new Date().getFullYear(), acum={};
+  snap.forEach(d=>{
+    const data=d.data();
+    const f=data.fecha?.toDate?data.fecha.toDate():new Date(data.fecha);
+    if(f.getMonth()===mes && f.getFullYear()===anio){
+      const n=data.producto||"Otro";
+      acum[n]=(acum[n]||0)+Number(data.cantidad||0);
+    }
+  });
+  const sorted=Object.entries(acum).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  if(!sorted.length) return;
+  const ctx=document.getElementById("chart-productos").getContext("2d");
+  if(chartProductos) chartProductos.destroy();
+  chartProductos=new Chart(ctx,{
+    type:"doughnut",
+    data:{
+      labels:sorted.map(([n])=>n),
+      datasets:[{ data:sorted.map(([,v])=>v), backgroundColor:PALETA.slice(0,sorted.length), borderWidth:0, hoverOffset:6 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:"65%",
+      plugins:{
+        legend:{ position:"right", labels:{ font:{family:"Outfit",size:11}, color:"#334155", padding:10, boxWidth:12 } },
+        tooltip:{ callbacks:{ label:c=>` ${c.label}: ${c.raw} uds` } }
+      }
+    }
+  });
+}
+
+// ════════════════════════════════════════════════
+//  ÚLTIMAS VENTAS
+// ════════════════════════════════════════════════
+async function cargarUltimasVentas() {
+  const snap=await getDocs(collection(db,"ventas"));
+  const ventas=[];
+  snap.forEach(d=>ventas.push(d.data()));
+  ventas.sort((a,b)=>{
+    const fa=a.fecha?.toDate?a.fecha.toDate():new Date(a.fecha);
+    const fb=b.fecha?.toDate?b.fecha.toDate():new Date(b.fecha);
+    return fb-fa;
+  });
+  const tbody=document.getElementById("tabla-ultimas");
+  if(!ventas.length){
+    tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;padding:20px;color:#94A3B8">Sin ventas aún</td></tr>`;
+    return;
+  }
+  tbody.innerHTML=ventas.slice(0,8).map(v=>`
+    <tr>
+      <td><span style="margin-right:6px">${getEmoji(v.producto)}</span>${v.producto}</td>
+      <td><span class="badge badge-azul">${v.cantidad}</span></td>
+      <td class="text-bold text-azul text-mono">${fmt(v.total)}</td>
+      <td><span class="badge badge-gris">${v.turno||"—"}</span></td>
+    </tr>`).join("");
+}
+
+// ════════════════════════════════════════════════
+//  ALERTAS INVENTARIO
+// ════════════════════════════════════════════════
+async function cargarAlertasInventario() {
+  const snap=await getDocs(collection(db,"inventario"));
+  const bajos=[];
+  snap.forEach(d=>{ const data=d.data(); if(Number(data.cantidad)<=Number(data.minimo)) bajos.push(data); });
+  const cont=document.getElementById("alertas-inv");
+  if(!bajos.length){
+    cont.innerHTML=`<div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-text">Todo en orden</div><div class="empty-state-sub">No hay alertas de stock</div></div>`;
+    return;
+  }
+  cont.innerHTML=bajos.map(item=>{
+    const pct=Math.min(100,Math.round((item.cantidad/item.minimo)*100));
+    const crit=item.cantidad===0;
+    return `<div class="inv-item">
+      <div class="inv-estado ${crit?'critico':'bajo'}"></div>
+      <div style="flex:1">
+        <div class="inv-nombre">${item.ingrediente}</div>
+        <div class="progress-wrap" style="margin-top:4px">
+          <div class="progress-bar ${crit?'rojo':'amarillo'}" style="width:${pct}%"></div>
+        </div>
+      </div>
+      <div class="inv-cantidad text-rojo">${item.cantidad} ${item.unidad}</div>
+    </div>`;
+  }).join("");
+}
+
+// ════════════════════════════════════════════════
+//  CHART FINANCIERO 6 MESES
+// ════════════════════════════════════════════════
+async function cargarChartFinanciero() {
+  const snap=await getDocs(collection(db,"movimientos"));
+  const ahora=new Date();
+  const mesAct=ahora.getMonth(), anioAct=ahora.getFullYear();
+
+  // Construir labels de los últimos 6 meses
+  const labels=[], mesesKeys=[];
+  for(let i=5;i>=0;i--){
+    let m=mesAct-i, a=anioAct;
+    if(m<0){ m+=12; a--; }
+    labels.push(MESES[m].substring(0,3));
+    mesesKeys.push({ mes:m, anio:a });
+  }
+
+  const ingresos=Array(6).fill(0), gastos=Array(6).fill(0);
+  snap.forEach(d=>{
+    const data=d.data();
+    const f=data.fecha?.toDate?data.fecha.toDate():new Date(data.fecha);
+    const fm=f.getMonth(), fa=f.getFullYear();
+    const idx=mesesKeys.findIndex(k=>k.mes===fm && k.anio===fa);
+    if(idx<0) return;
+    if(data.tipo==="Ingreso") ingresos[idx]+=Number(data.monto||0);
+    else                      gastos[idx]  +=Number(data.monto||0);
+  });
+
+  const ctx=document.getElementById("chart-financiero").getContext("2d");
+  if(chartFinanciero) chartFinanciero.destroy();
+  chartFinanciero=new Chart(ctx,{
+    type:"bar",
+    data:{
+      labels,
+      datasets:[
+        { label:"Ingresos", data:ingresos, backgroundColor:"#DBEAFE", borderColor:"#2563EB", borderWidth:2, borderRadius:8, borderSkipped:false },
+        { label:"Gastos",   data:gastos,   backgroundColor:"#FEE2E2", borderColor:"#EF4444", borderWidth:2, borderRadius:8, borderSkipped:false },
+      ]
+    },
+    options:{
+      ...chartDefaults,
+      plugins:{
+        legend:{ labels:{ font:{family:"Outfit",size:12}, color:"#334155", padding:16, boxWidth:14 } },
+        tooltip:{ callbacks:{ label:c=>` ${c.dataset.label}: ${fmt(c.raw)}` } }
+      }
+    }
+  });
+}
+
+init();
+</script>
+
+<!-- Sidebar responsive -->
+<script>
+function toggleSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("sidebar-overlay");
+  const isOpen  = sidebar.classList.contains("open");
+  if (isOpen) {
+    sidebar.classList.remove("open");
+    overlay.classList.remove("visible");
+  } else {
+    sidebar.classList.add("open");
+    overlay.classList.add("visible");
+  }
+}
+function closeSidebar() {
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("sidebar-overlay").classList.remove("visible");
+}
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".nav-item").forEach(el => {
+    el.addEventListener("click", () => {
+      if (window.innerWidth <= 900) closeSidebar();
+    });
+  });
+});
+</script>
+</body>
+</html>
