@@ -121,7 +121,7 @@ La app abre en `http://127.0.0.1:5500/index.html`
 
 ---
 
-## Datos demo incluidos
+## Datos incluidos
 
 Al abrir la app por primera vez se cargan automáticamente **6 meses de datos históricos** con patrones reales:
 
@@ -134,9 +134,9 @@ Al abrir la app por primera vez se cargan automáticamente **6 meses de datos hi
 
 ---
 
-## 🔗 Demo en línea
+## 🔗 Sitio web en vivo
 
-👉 **[Ver aplicación en vivo](https://tuusuario.github.io/pa-parchar)**
+👉 **[Ver sitio web en vivo](https://diegogarciadev8266.github.io/Pa-Parchar/)**
 
 ---
 

@@ -12,12 +12,28 @@ export const fmtK   = n => n >= 1000 ? "$" + (n/1000).toFixed(0) + "k" : fmt(n);
 export const hoyStr = () => new Date().toISOString().split("T")[0];
 
 export function fechaLegible(fecha) {
-  const d = fecha?.toDate ? fecha.toDate() : new Date(fecha);
-  return `${d.getDate()} ${MESES[d.getMonth()].substring(0,3)} ${d.getFullYear()}`;
+  try {
+    if (!fecha) return "Sin fecha";
+    const d = fecha?.toDate ? fecha.toDate()
+            : fecha?.seconds ? new Date(fecha.seconds * 1000)
+            : new Date(fecha);
+    if (!d || isNaN(d.getTime())) return "Sin fecha";
+    return `${d.getDate()} ${MESES[d.getMonth()].substring(0,3)} ${d.getFullYear()}`;
+  } catch(e) {
+    return "Sin fecha";
+  }
 }
 
 export function toDate(fecha) {
-  return fecha?.toDate ? fecha.toDate() : new Date(fecha);
+  try {
+    if (!fecha) return new Date(0);
+    if (fecha?.toDate) return fecha.toDate();
+    if (fecha?.seconds) return new Date(fecha.seconds * 1000);
+    const d = new Date(fecha);
+    return isNaN(d.getTime()) ? new Date(0) : d;
+  } catch(e) {
+    return new Date(0);
+  }
 }
 
 // ── EMOJI POR PRODUCTO ───────────────────────────
